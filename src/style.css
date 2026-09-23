@@ -1,0 +1,20 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@500;700;900&display=swap');
+
+:root { font-family: "Noto Sans JP", system-ui, sans-serif; color: #f4eddb; background: #0c100d; }
+* { box-sizing: border-box; }
+html, body, #app { margin: 0; width: 100%; height: 100%; overflow: hidden; }
+canvas { display: block; }
+#topbar { position: fixed; z-index: 4; inset: 0 0 auto 0; height: 58px; display:flex; align-items:center; gap:20px; padding:0 20px; background:linear-gradient(180deg,#1c251f 0%,#121813f2 100%); border-bottom:1px solid #596452; box-shadow:0 5px 20px #0007; pointer-events:none; }
+.brand { font-weight:900; letter-spacing:.12em; color:#e5c47b; margin-right:auto; }
+.res { display:flex; align-items:center; gap:8px; min-width:88px; font-weight:800; }
+.res i { width:12px; height:12px; border-radius:3px; display:inline-block; box-shadow:0 0 0 2px #0005; }
+.wood i{background:#97643b}.food i{background:#d9634c}.gold i{background:#e0b64c}.pop i{background:#9faaa0}
+#help { position:fixed; z-index:4; top:72px; left:16px; padding:10px 13px; background:#111914db; border:1px solid #61705a; border-radius:8px; font-size:12px; line-height:1.7; pointer-events:none; color:#dbe1d4; }
+#status { position:fixed; z-index:4; left:50%; top:72px; transform:translateX(-50%); background:#141b16e8; border:1px solid #847652; color:#ead9ad; padding:9px 18px; border-radius:30px; font-size:13px; opacity:0; transition:opacity .2s; pointer-events:none; }
+#actions { position:fixed; z-index:5; left:50%; bottom:18px; transform:translateX(-50%); display:flex; gap:10px; padding:10px; background:#101611e8; border:1px solid #53604e; border-radius:12px; box-shadow:0 8px 30px #0009; }
+button { color:#eee7d5; background:linear-gradient(#344133,#273127); border:1px solid #6f806b; border-radius:7px; min-width:130px; padding:10px 14px; cursor:pointer; font:700 13px inherit; }
+button:hover { background:linear-gradient(#52634f,#374435); border-color:#c7aa6a; } button:disabled{opacity:.38;cursor:not-allowed}
+button small{display:block;color:#cdbd96;font-size:10px;margin-top:3px}
+#objective { position:fixed; z-index:4; right:16px; top:72px; width:230px; padding:12px 14px; border-radius:8px; background:#111914dc; border:1px solid #61705a; font-size:12px; line-height:1.6; pointer-events:none; }
+#objective strong { color:#e4c273; display:block; margin-bottom:3px; }
+@media(max-width:760px){#help{display:none}.brand{font-size:12px}.res{min-width:auto;font-size:12px;gap:4px}#topbar{gap:9px;padding:0 10px}.pop{display:none}button{min-width:94px;padding:8px;font-size:11px}#objective{top:65px;right:8px;width:180px}.actions{bottom:8px}}
