@@ -16,6 +16,7 @@ canvas { display: block; touch-action:none; }
 button { color:#eee7d5; background:linear-gradient(#344133,#273127); border:1px solid #6f806b; border-radius:7px; min-width:130px; padding:10px 14px; cursor:pointer; font:700 13px inherit; }
 button:hover { background:linear-gradient(#52634f,#374435); border-color:#c7aa6a; } button:disabled{opacity:.38;cursor:not-allowed}
 button small{display:block;color:#cdbd96;font-size:10px;margin-top:3px}
+.actionIcon{display:inline-grid;place-items:center;width:27px;height:27px;margin-right:8px;border:1px solid #9eb0a0;border-radius:7px;background:#172019;color:#f0d17d;font-size:13px;box-shadow:inset 0 1px #ffffff18}
 #objective { position:fixed; z-index:4; right:16px; top:72px; width:230px; padding:12px 14px; border-radius:8px; background:#111914dc; border:1px solid #61705a; font-size:12px; line-height:1.6; pointer-events:none; }
 #objective strong { color:#e4c273; display:block; margin-bottom:3px; }
 .mobileHelp,#zoom{display:none}
@@ -26,7 +27,7 @@ button small{display:block;color:#cdbd96;font-size:10px;margin-top:3px}
   #help{display:none}.desktopHelp,.mobileHelp{display:none}
   #objective{display:none}#status{top:61px;max-width:70vw;padding:7px 12px;font-size:11px;text-align:center}
   #actions{left:8px;right:8px;bottom:max(8px,env(safe-area-inset-bottom));transform:none;max-width:none;gap:6px;padding:7px;border-radius:10px;scroll-snap-type:x proximity}
-  button{min-width:112px;min-height:52px;padding:7px 9px;font-size:11px;touch-action:manipulation;scroll-snap-align:start}button small{font-size:9px}
+  button{min-width:126px;min-height:52px;padding:6px 8px;font-size:11px;touch-action:manipulation;scroll-snap-align:start}button small{font-size:9px}.actionIcon{width:24px;height:24px;margin-right:5px;font-size:11px}
   #zoom{display:flex;position:fixed;z-index:6;right:9px;bottom:84px;gap:5px;align-items:center;padding:5px;border:1px solid #657360;border-radius:28px;background:#111914ed;box-shadow:0 5px 20px #0008;pointer-events:auto}#zoom button{min-width:46px;width:46px;min-height:46px;height:46px;padding:0;border-radius:50%;font-size:24px;background:#2d3a2e;touch-action:none;user-select:none;-webkit-user-select:none}#zoomValue{min-width:42px;text-align:center;color:#ead28d;font-size:11px;font-weight:900}
   #resultCard{padding:24px 18px}#resultCard h1{font-size:38px}
 }
@@ -35,7 +36,7 @@ button small{display:block;color:#cdbd96;font-size:10px;margin-top:3px}
   #topbar{height:44px;gap:8px;padding:0 max(9px,env(safe-area-inset-right)) 0 max(9px,env(safe-area-inset-left));overflow:hidden}.brand{display:none}.age{margin-right:auto;font-size:9px}.res{font-size:10px}.res i{width:8px;height:8px}
   #help,#objective{display:none}#status{top:49px;max-width:60vw;padding:6px 11px;font-size:10px}
   #actions{left:max(6px,env(safe-area-inset-left));right:max(6px,env(safe-area-inset-right));bottom:max(5px,env(safe-area-inset-bottom));gap:5px;padding:5px;border-radius:9px}
-  #actions button{min-width:104px;min-height:44px;padding:5px 8px;font-size:10px}#actions button small{font-size:8px;margin-top:1px}
+  #actions button{min-width:116px;min-height:44px;padding:4px 7px;font-size:10px}#actions button small{font-size:8px;margin-top:1px}.actionIcon{width:21px;height:21px;margin-right:4px;font-size:10px}
   #zoom{right:max(7px,env(safe-area-inset-right));bottom:60px;padding:3px;gap:3px}#zoom button{min-width:36px;width:36px;min-height:36px;height:36px;font-size:20px}#zoomValue{min-width:36px;font-size:10px}
   #resultCard{width:min(520px,calc(100vw - 32px));padding:15px 22px}#resultCard h1{margin:5px 0 0;font-size:28px}#resultWinner{margin:0 0 9px;font-size:12px}#resultCard dl{gap:8px;margin-bottom:10px}#resultCard dl div{padding:7px}#restart{min-height:42px}
 }
