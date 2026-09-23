@@ -21,7 +21,7 @@ button small{display:block;color:#cdbd96;font-size:10px;margin-top:3px}
 .mobileHelp,#zoom{display:none}
 #resultOverlay{position:fixed;z-index:30;inset:0;display:none;place-items:center;padding:20px;background:#07100bd9;backdrop-filter:blur(7px)}
 #resultOverlay.show{display:grid}#resultCard{width:min(390px,calc(100vw - 32px));padding:28px 24px;text-align:center;border:1px solid #9d8855;border-radius:18px;background:linear-gradient(180deg,#253126,#141b16);box-shadow:0 24px 80px #000c}#resultBadge{display:inline-block;padding:4px 10px;border-radius:20px;background:#d5b96b20;color:#e6c977;font-size:11px;font-weight:900;letter-spacing:.12em}#resultCard h1{margin:10px 0 2px;color:#f0d17d;font-size:42px}#resultWinner{margin:0 0 20px;color:#f5eedb;font-weight:800}#resultCard dl{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 20px}#resultCard dl div{padding:11px 8px;border-radius:10px;background:#0d130f99}#resultCard dt{font-size:10px;color:#aeb9aa}#resultCard dd{margin:4px 0 0;font-size:16px;font-weight:900}#restart{width:100%;min-height:52px;background:linear-gradient(#86723e,#62522d);border-color:#d8bd72;font-size:15px}
-@media(max-width:760px){
+@media (hover:none), (pointer:coarse), (max-width:760px), (max-height:600px){
   #topbar{height:54px;gap:7px;padding:0 8px;overflow-x:auto}.brand{font-size:10px;letter-spacing:.06em}.age{font-size:9px;padding:4px 6px}.res{min-width:auto;font-size:11px;gap:3px}.res i{width:9px;height:9px}.pop{display:flex}
   #help{display:none}.desktopHelp,.mobileHelp{display:none}
   #objective{display:none}#status{top:61px;max-width:70vw;padding:7px 12px;font-size:11px;text-align:center}
@@ -31,3 +31,11 @@ button small{display:block;color:#cdbd96;font-size:10px;margin-top:3px}
   #resultCard{padding:24px 18px}#resultCard h1{font-size:38px}
 }
 @media(max-width:430px){#topbar .brand{display:none}.age{margin-right:auto}.res{font-size:10px}#help{max-width:230px}}
+@media (orientation:landscape) and (max-height:600px){
+  #topbar{height:44px;gap:8px;padding:0 max(9px,env(safe-area-inset-right)) 0 max(9px,env(safe-area-inset-left));overflow:hidden}.brand{display:none}.age{margin-right:auto;font-size:9px}.res{font-size:10px}.res i{width:8px;height:8px}
+  #help,#objective{display:none}#status{top:49px;max-width:60vw;padding:6px 11px;font-size:10px}
+  #actions{left:max(6px,env(safe-area-inset-left));right:max(6px,env(safe-area-inset-right));bottom:max(5px,env(safe-area-inset-bottom));gap:5px;padding:5px;border-radius:9px}
+  #actions button{min-width:104px;min-height:44px;padding:5px 8px;font-size:10px}#actions button small{font-size:8px;margin-top:1px}
+  #zoom{right:max(7px,env(safe-area-inset-right));bottom:60px;padding:3px;gap:3px}#zoom button{min-width:36px;width:36px;min-height:36px;height:36px;font-size:20px}#zoomValue{min-width:36px;font-size:10px}
+  #resultCard{width:min(520px,calc(100vw - 32px));padding:15px 22px}#resultCard h1{margin:5px 0 0;font-size:28px}#resultWinner{margin:0 0 9px;font-size:12px}#resultCard dl{gap:8px;margin-bottom:10px}#resultCard dl div{padding:7px}#restart{min-height:42px}
+}
