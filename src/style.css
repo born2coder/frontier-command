@@ -2,19 +2,29 @@
 
 :root { font-family: "Noto Sans JP", system-ui, sans-serif; color: #f4eddb; background: #0c100d; }
 * { box-sizing: border-box; }
-html, body, #app { margin: 0; width: 100%; height: 100%; overflow: hidden; }
-canvas { display: block; }
+html, body, #app { margin: 0; width: 100%; height: 100%; overflow: hidden; overscroll-behavior:none; touch-action:none; }
+canvas { display: block; touch-action:none; }
 #topbar { position: fixed; z-index: 4; inset: 0 0 auto 0; height: 58px; display:flex; align-items:center; gap:20px; padding:0 20px; background:linear-gradient(180deg,#1c251f 0%,#121813f2 100%); border-bottom:1px solid #596452; box-shadow:0 5px 20px #0007; pointer-events:none; }
 .brand { font-weight:900; letter-spacing:.12em; color:#e5c47b; margin-right:auto; }
+.age { color:#ead28d; font-size:12px; font-weight:800; padding:5px 9px; border:1px solid #6f684c; border-radius:20px; white-space:nowrap; }
 .res { display:flex; align-items:center; gap:8px; min-width:88px; font-weight:800; }
 .res i { width:12px; height:12px; border-radius:3px; display:inline-block; box-shadow:0 0 0 2px #0005; }
 .wood i{background:#97643b}.food i{background:#d9634c}.gold i{background:#e0b64c}.pop i{background:#9faaa0}
 #help { position:fixed; z-index:4; top:72px; left:16px; padding:10px 13px; background:#111914db; border:1px solid #61705a; border-radius:8px; font-size:12px; line-height:1.7; pointer-events:none; color:#dbe1d4; }
 #status { position:fixed; z-index:4; left:50%; top:72px; transform:translateX(-50%); background:#141b16e8; border:1px solid #847652; color:#ead9ad; padding:9px 18px; border-radius:30px; font-size:13px; opacity:0; transition:opacity .2s; pointer-events:none; }
-#actions { position:fixed; z-index:5; left:50%; bottom:18px; transform:translateX(-50%); display:flex; gap:10px; padding:10px; background:#101611e8; border:1px solid #53604e; border-radius:12px; box-shadow:0 8px 30px #0009; }
+#actions { position:fixed; z-index:5; left:50%; bottom:18px; transform:translateX(-50%); display:flex; gap:8px; padding:9px; max-width:calc(100vw - 24px); overflow-x:auto; background:#101611ed; border:1px solid #53604e; border-radius:12px; box-shadow:0 8px 30px #0009; scrollbar-width:thin; }
 button { color:#eee7d5; background:linear-gradient(#344133,#273127); border:1px solid #6f806b; border-radius:7px; min-width:130px; padding:10px 14px; cursor:pointer; font:700 13px inherit; }
 button:hover { background:linear-gradient(#52634f,#374435); border-color:#c7aa6a; } button:disabled{opacity:.38;cursor:not-allowed}
 button small{display:block;color:#cdbd96;font-size:10px;margin-top:3px}
 #objective { position:fixed; z-index:4; right:16px; top:72px; width:230px; padding:12px 14px; border-radius:8px; background:#111914dc; border:1px solid #61705a; font-size:12px; line-height:1.6; pointer-events:none; }
 #objective strong { color:#e4c273; display:block; margin-bottom:3px; }
-@media(max-width:760px){#help{display:none}.brand{font-size:12px}.res{min-width:auto;font-size:12px;gap:4px}#topbar{gap:9px;padding:0 10px}.pop{display:none}button{min-width:94px;padding:8px;font-size:11px}#objective{top:65px;right:8px;width:180px}.actions{bottom:8px}}
+.mobileHelp,#zoom{display:none}
+@media(max-width:760px){
+  #topbar{height:54px;gap:7px;padding:0 8px;overflow-x:auto}.brand{font-size:10px;letter-spacing:.06em}.age{font-size:9px;padding:4px 6px}.res{min-width:auto;font-size:11px;gap:3px}.res i{width:9px;height:9px}.pop{display:flex}
+  #help{display:block;top:61px;left:8px;padding:6px 9px;font-size:10px;line-height:1.45}.desktopHelp{display:none}.mobileHelp{display:inline}
+  #objective{display:none}#status{top:61px;max-width:70vw;padding:7px 12px;font-size:11px;text-align:center}
+  #actions{left:8px;right:8px;bottom:max(8px,env(safe-area-inset-bottom));transform:none;max-width:none;gap:6px;padding:7px;border-radius:10px;scroll-snap-type:x proximity}
+  button{min-width:112px;min-height:52px;padding:7px 9px;font-size:11px;touch-action:manipulation;scroll-snap-align:start}button small{font-size:9px}
+  #zoom{display:flex;position:fixed;z-index:6;right:9px;bottom:84px;gap:6px}#zoom button{min-width:46px;width:46px;min-height:46px;height:46px;padding:0;border-radius:50%;font-size:24px;background:#18211be8}
+}
+@media(max-width:430px){#topbar .brand{display:none}.age{margin-right:auto}.res{font-size:10px}#help{max-width:230px}}
