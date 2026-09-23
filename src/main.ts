@@ -5,7 +5,7 @@ type Kind = 'villager' | 'soldier' | 'enemy';
 type ResourceKind = 'wood' | 'food' | 'gold';
 type BuildingKind = 'town' | 'house' | 'barracks';
 
-interface Unit { id:number; kind:Kind; x:number; y:number; hp:number; maxHp:number; speed:number; damage:number; range:number; selected:boolean; target?:{x:number;y:number}; gather?:ResourceNode; attack?:Unit; shape:Phaser.GameObjects.Arc; ring:Phaser.GameObjects.Arc; hpBar:Phaser.GameObjects.Rectangle; }
+interface Unit { id:number; kind:Kind; x:number; y:number; hp:number; maxHp:number; speed:number; damage:number; range:number; selected:boolean; target?:{x:number;y:number}; gather?:ResourceNode; attack?:Unit; build?:Building; shape:Phaser.GameObjects.Arc; ring:Phaser.GameObjects.Arc; hpBar:Phaser.GameObjects.Rectangle; }
 interface ResourceNode { id:number; kind:ResourceKind; x:number; y:number; amount:number; shape:Phaser.GameObjects.Shape; label:Phaser.GameObjects.Text; }
 interface Building { id:number; kind:BuildingKind; x:number; y:number; hp:number; maxHp:number; progress:number; shape:Phaser.GameObjects.Rectangle; label:Phaser.GameObjects.Text; }
 
@@ -66,7 +66,8 @@ class GameScene extends Phaser.Scene {
     const size=kind==='town'?120:kind==='barracks'?100:74, color=kind==='town'?0x8b7651:kind==='house'?0xb18b5a:0x6f6658;
     const shape=this.add.rectangle(x,y,size,size*.72,color,progress<1?.38:1).setStrokeStyle(3,0x3c3023).setDepth(5);
     const names={town:'町の中心',house:'家',barracks:'兵舎'}; const label=this.add.text(x,y,names[kind],{fontSize:'13px',fontStyle:'bold',color:'#fff4d3',stroke:'#201a13',strokeThickness:3}).setOrigin(.5).setDepth(6);
-    this.buildings.push({id:this.nextId++,kind,x,y,hp:progress<1?1:500,maxHp:500,progress,shape,label});
+    const building={id:this.nextId++,kind,x,y,hp:progress<1?1:500,maxHp:500,progress,shape,label};
+    this.buildings.push(building); return building;
   }
   createFog(){
     for(let y=60;y<WORLD_H;y+=100)for(let x=50;x<WORLD_W;x+=100)this.fog.push(this.add.rectangle(x,y,102,102,0x080c09,.91).setDepth(50));
@@ -88,11 +89,11 @@ class GameScene extends Phaser.Scene {
     const selected=this.units.filter(u=>u.selected&&u.kind!=='enemy'); if(!selected.length)return;
     const enemy=this.units.find(u=>u.kind==='enemy'&&Phaser.Math.Distance.Between(u.x,u.y,x,y)<30);
     const res=this.resources.find(r=>Phaser.Math.Distance.Between(r.x,r.y,x,y)<35);
-    selected.forEach((u,i)=>{u.attack=enemy;u.gather=u.kind==='villager'?res:undefined; const t=enemy??res; u.target=t?{x:t.x,y:t.y}:{x:x+(i%3)*24,y:y+Math.floor(i/3)*24};});
+    selected.forEach((u,i)=>{u.build=undefined;u.attack=enemy;u.gather=u.kind==='villager'?res:undefined; const t=enemy??res; u.target=t?{x:t.x,y:t.y}:{x:x+(i%3)*24,y:y+Math.floor(i/3)*24};});
     this.say(enemy?'敵を攻撃します':res?`${res.kind==='wood'?'木材':res.kind==='food'?'食料':'金'}を採集します`:'移動します');
   }
   beginPlace(kind:BuildingKind){const cost=kind==='house'?80:140;if(state.wood<cost){this.say('木材が足りません');return}if(!this.units.some(u=>u.selected&&u.kind==='villager')){this.say('建設する村人を選択してください');return}this.placing=kind;this.say('建設場所を左クリックしてください');}
-  place(x:number,y:number){const kind=this.placing!;const cost=kind==='house'?80:140;if(x<80||y<100||x>WORLD_W-80||y>WORLD_H-80)return;state.wood-=cost;this.addBuilding(kind,x,y,0);this.placing=undefined;this.refreshUi();}
+  place(x:number,y:number){const kind=this.placing!;const cost=kind==='house'?80:140;if(x<80||y<100||x>WORLD_W-80||y>WORLD_H-80)return;state.wood-=cost;const building=this.addBuilding(kind,x,y,0);const builders=this.units.filter(u=>u.selected&&u.kind==='villager');builders.forEach((u,i)=>{u.attack=undefined;u.gather=undefined;u.build=building;u.target={x:x+((i%3)-1)*24,y:y+55+Math.floor(i/3)*22};});this.placing=undefined;this.refreshUi();this.say(`${kind==='house'?'家':'兵舎'}の建設を開始します`);}
   train(){const barracks=this.buildings.find(b=>b.kind==='barracks'&&b.progress>=1);if(!barracks){this.say('完成した兵舎が必要です');return}if(state.food<60||state.gold<30){this.say('食料または金が足りません');return}if(this.units.filter(u=>u.kind!=='enemy').length>=state.popCap){this.say('人口上限です。家を建ててください');return}state.food-=60;state.gold-=30;this.refreshUi();this.say('兵士を訓練中…');this.time.delayedCall(2300,()=>{this.addUnit('soldier',barracks.x+70,barracks.y+40);this.refreshUi();this.say('兵士が完成しました');});}
   say(message:string){const el=document.querySelector<HTMLElement>('#status')!;el.textContent=message;el.style.opacity='1';if(this.statusTimer)clearTimeout(this.statusTimer);this.statusTimer=window.setTimeout(()=>el.style.opacity='0',1800);}
   refreshUi(){(document.querySelector('#wood')!).textContent=Math.floor(state.wood)+'';(document.querySelector('#food')!).textContent=Math.floor(state.food)+'';(document.querySelector('#gold')!).textContent=Math.floor(state.gold)+'';(document.querySelector('#pop')!).textContent=`${this.units.filter(u=>u.kind!=='enemy').length} / ${state.popCap}`;}
@@ -104,7 +105,7 @@ class GameScene extends Phaser.Scene {
     this.refreshUi();
   }
   moveCamera(dt:number){const c=this.cameras.main,p=this.input.activePointer,s=520*dt/c.zoom;let dx=0,dy=0;if(this.keys.A.isDown||this.keys.LEFT.isDown||p.x<8)dx=-s;if(this.keys.D.isDown||this.keys.RIGHT.isDown||p.x>this.scale.width-8)dx=s;if(this.keys.W.isDown||this.keys.UP.isDown||p.y<UI_TOP+4)dy=-s;if(this.keys.S.isDown||this.keys.DOWN.isDown||p.y>this.scale.height-8)dy=s;c.scrollX+=dx;c.scrollY+=dy;}
-  updateBuildings(dt:number){for(const b of this.buildings){if(b.progress>=1)continue;const worker=this.units.find(u=>u.kind==='villager'&&Phaser.Math.Distance.Between(u.x,u.y,b.x,b.y)<150);if(worker){b.progress=Math.min(1,b.progress+dt*.18);b.hp=b.maxHp*b.progress;b.shape.setAlpha(.38+.62*b.progress);b.label.setText(`${b.kind==='house'?'家':'兵舎'} ${Math.floor(b.progress*100)}%`);if(b.progress>=1){b.label.setText(b.kind==='house'?'家':'兵舎');if(b.kind==='house')state.popCap+=5;this.say(`${b.kind==='house'?'家':'兵舎'}が完成しました`)}}}}
+  updateBuildings(dt:number){for(const b of this.buildings){if(b.progress>=1)continue;const builders=this.units.filter(u=>u.kind==='villager'&&u.build===b&&Phaser.Math.Distance.Between(u.x,u.y,b.x,b.y)<85);if(builders.length){b.progress=Math.min(1,b.progress+dt*.18*Math.min(builders.length,3));b.hp=b.maxHp*b.progress;b.shape.setAlpha(.38+.62*b.progress);b.label.setText(`${b.kind==='house'?'家':'兵舎'} ${Math.floor(b.progress*100)}%`);if(b.progress>=1){b.label.setText(b.kind==='house'?'家':'兵舎');if(b.kind==='house')state.popCap+=5;for(const u of this.units)if(u.build===b){u.build=undefined;u.target=undefined}this.refreshUi();this.say(`${b.kind==='house'?'家':'兵舎'}が完成しました。${b.kind==='house'?'人口上限 +5':''}`)}}}}
   updateUnits(time:number,dt:number){
     for(const u of [...this.units]){
       if(u.attack&&!this.units.includes(u.attack)){u.attack=undefined;u.target=undefined}
