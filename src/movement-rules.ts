@@ -1,5 +1,10 @@
 export interface SeparationOffset{ax:number;ay:number;bx:number;by:number}
 
+export function avoidanceTurns(moverId:number,blockerId:number){
+  const side=((moverId*31+blockerId*17)&1)?1:-1;
+  return[side*Math.PI/2,-side*Math.PI/2,side*Math.PI/3,-side*Math.PI/3];
+}
+
 export function separationOffsets(dx:number,dy:number,push:number,aMoving:boolean,bMoving:boolean,sameOwner:boolean,aId:number,bId:number):SeparationOffset{
   const distance=Math.max(.01,Math.hypot(dx,dy));
   const nx=dx/distance,ny=dy/distance;
