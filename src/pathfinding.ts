@@ -3,13 +3,21 @@ export interface Point { x:number; y:number }
 export class GridPathfinder {
   readonly cols:number;
   readonly rows:number;
+  readonly width:number;
+  readonly height:number;
+  readonly cell:number;
+  private blocked:(x:number,y:number)=>boolean;
 
   constructor(
-    readonly width:number,
-    readonly height:number,
-    readonly cell:number,
-    private blocked:(x:number,y:number)=>boolean,
+    width:number,
+    height:number,
+    cell:number,
+    blocked:(x:number,y:number)=>boolean,
   ) {
+    this.width=width;
+    this.height=height;
+    this.cell=cell;
+    this.blocked=blocked;
     this.cols=Math.ceil(width/cell);
     this.rows=Math.ceil(height/cell);
   }
