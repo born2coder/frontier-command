@@ -1,4 +1,4 @@
-# Frontier Command
+# Age of TERU
 
 AoEのような操作感をブラウザで試す、シングルプレイヤーRTSのMVPです。
 
