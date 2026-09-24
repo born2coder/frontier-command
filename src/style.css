@@ -21,7 +21,7 @@ canvas { display: block; touch-action:none; }
 .wood i{background:#97643b}.food i{background:#d9634c}.gold i{background:#e0b64c}.pop i{background:#9faaa0}
 #help { position:fixed; z-index:4; top:72px; left:16px; padding:10px 13px; background:#111914db; border:1px solid #61705a; border-radius:8px; font-size:12px; line-height:1.7; pointer-events:none; color:#dbe1d4; }
 #status { position:fixed; z-index:4; left:50%; top:72px; transform:translateX(-50%); background:#141b16e8; border:1px solid #847652; color:#ead9ad; padding:9px 18px; border-radius:30px; font-size:13px; opacity:0; transition:opacity .2s; pointer-events:none; }
-#actions { position:fixed; z-index:5; left:50%; bottom:18px; transform:translateX(-50%); display:flex; gap:8px; padding:9px; max-width:calc(100vw - 24px); overflow-x:auto; background:#101611ed; border:1px solid #53604e; border-radius:12px; box-shadow:0 8px 30px #0009; scrollbar-width:thin; }
+#actions { position:fixed; z-index:5; left:50%; bottom:18px; transform:translateX(-50%); display:flex; gap:8px; padding:9px; max-width:calc(100vw - 24px); overflow-x:auto; background:#101611ed; border:1px solid #53604e; border-radius:12px; box-shadow:0 8px 30px #0009; scrollbar-width:thin; touch-action:pan-x; }
 .emptyActions{padding:12px 18px;color:#aeb9aa;font-size:12px;white-space:nowrap}
 #selectionPanel{position:fixed;z-index:5;left:16px;bottom:18px;width:220px;min-height:68px;padding:11px 13px;background:#101611ed;border:1px solid #53604e;border-radius:12px;box-shadow:0 8px 30px #0009;pointer-events:none}#selectionPanel strong,#selectionPanel span{display:block}#selectionPanel strong{color:#f0d17d;font-size:14px}#selectionPanel span{margin-top:4px;color:#c8d0c3;font-size:10px;line-height:1.45}
 #minimap{position:fixed;z-index:6;right:14px;bottom:14px;width:210px;height:135px;border:2px solid #776c4e;border-radius:6px;background:#172318;box-shadow:0 7px 25px #000b;touch-action:none;cursor:crosshair}
@@ -40,7 +40,7 @@ button small{display:block;color:#cdbd96;font-size:10px;margin-top:3px}
   #help{display:none}.desktopHelp,.mobileHelp{display:none}
   #objective{display:none}#status{top:61px;max-width:70vw;padding:7px 12px;font-size:11px;text-align:center}
   #actions{left:8px;right:8px;bottom:max(8px,env(safe-area-inset-bottom));transform:none;max-width:none;gap:6px;padding:7px;border-radius:10px;scroll-snap-type:x proximity}
-  #selectionPanel{left:8px;bottom:77px;width:180px;min-height:54px;padding:7px 9px}#selectionPanel strong{font-size:11px}#selectionPanel span{font-size:8px;margin-top:2px}
+  #selectionPanel{left:8px;bottom:86px;width:180px;min-height:54px;padding:7px 9px}#selectionPanel strong{font-size:11px}#selectionPanel span{font-size:8px;margin-top:2px}
   #minimap{right:9px;bottom:140px;width:150px;height:96px}
   #cancelPlacement{top:61px;min-width:145px;min-height:42px}
   button{min-width:126px;min-height:52px;padding:6px 8px;font-size:11px;touch-action:manipulation;scroll-snap-align:start}button small{font-size:9px}.actionIcon{width:24px;height:24px;margin-right:5px;font-size:11px}
@@ -53,7 +53,7 @@ button small{display:block;color:#cdbd96;font-size:10px;margin-top:3px}
   #topbar{height:44px;gap:8px;padding:0 max(9px,env(safe-area-inset-right)) 0 max(9px,env(safe-area-inset-left));overflow:hidden}.brand{display:none}.age{margin-right:auto;font-size:9px}.res{font-size:10px}.res i{width:8px;height:8px}
   #help,#objective{display:none}#status{top:49px;max-width:60vw;padding:6px 11px;font-size:10px}
   #actions{left:max(6px,env(safe-area-inset-left));right:max(6px,env(safe-area-inset-right));bottom:max(5px,env(safe-area-inset-bottom));gap:5px;padding:5px;border-radius:9px}
-  #selectionPanel{left:max(6px,env(safe-area-inset-left));bottom:57px;width:154px;min-height:45px;padding:5px 7px}#selectionPanel strong{font-size:10px}#selectionPanel span{font-size:7px}
+  #selectionPanel{left:max(6px,env(safe-area-inset-left));bottom:67px;width:154px;min-height:45px;padding:5px 7px}#selectionPanel strong{font-size:10px}#selectionPanel span{font-size:7px}
   #minimap{right:max(6px,env(safe-area-inset-right));bottom:108px;width:128px;height:82px}
   #cancelPlacement{top:49px;min-height:36px;padding:5px 10px}
   #actions button{min-width:116px;min-height:44px;padding:4px 7px;font-size:10px}#actions button small{font-size:8px;margin-top:1px}.actionIcon{width:21px;height:21px;margin-right:4px;font-size:10px}
