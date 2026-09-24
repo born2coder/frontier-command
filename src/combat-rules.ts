@@ -14,3 +14,12 @@ export function shouldTakeContactTarget(currentIsAlive:boolean,currentDistance:n
   if(isSameTarget)return false;
   return !currentIsAlive||currentDistance>currentReach+8;
 }
+
+export function combatSlotOffset(attackerId:number,targetId:number){
+  const slots=[0,-1,1,-2,2,-3,3,-4,4];
+  return slots[(attackerId*7+targetId*3)%slots.length]*Math.PI/12;
+}
+
+export function shouldRepathCombat(hasPath:boolean,targetMoved:number){
+  return !hasPath||targetMoved>38;
+}
