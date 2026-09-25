@@ -126,7 +126,7 @@ test('a moving soldier interrupts its order and retaliates against an attacking 
 });
 
 test('CPU completes military production and launches an attack',()=>{
- const e=engine(),cpu=new CpuController(1),before=e.state.units.filter(u=>u.factionId===0).reduce((n,u)=>n+u.hp,0)+e.state.buildings.filter(b=>b.factionId===0).reduce((n,b)=>n+b.hp,0);for(let i=0;i<2400&&e.state.phase==='playing';i++){cpu.update(e);e.tick(100)}const military=e.state.units.filter(u=>u.factionId===1&&u.kind!=='villager'),after=e.state.units.filter(u=>u.factionId===0).reduce((n,u)=>n+u.hp,0)+e.state.buildings.filter(b=>b.factionId===0).reduce((n,b)=>n+b.hp,0);assert.ok(e.state.buildings.some(b=>b.factionId===1&&b.kind==='barracks'&&b.progress===1),'CPU did not finish a barracks');assert.ok(military.length>=2,'CPU did not train an army');assert.ok(after<before,'CPU army never damaged the opponent');
+ const e=engine(),cpu=new CpuController(1),health=()=>e.state.units.filter(u=>u.factionId===0).reduce((n,u)=>n+u.hp,0)+e.state.buildings.filter(b=>b.factionId===0).reduce((n,b)=>n+b.hp,0),before=health();for(let i=0;i<899;i++){cpu.update(e);e.tick(100)}assert.equal(health(),before,'CPU attacked before the 90 second preparation period');for(let i=899;i<2600&&e.state.phase==='playing';i++){cpu.update(e);e.tick(100)}const military=e.state.units.filter(u=>u.factionId===1&&u.kind!=='villager'),after=health();assert.ok(e.state.buildings.some(b=>b.factionId===1&&b.kind==='barracks'&&b.progress===1),'CPU did not finish a barracks');assert.ok(military.length>=4,'CPU did not train its minimum attack force');assert.ok(after<before,'CPU army never damaged the opponent');
 });
 
 test('a packed defending army spreads out, moves and damages an intruder',()=>{

@@ -2,7 +2,7 @@ import {SeededRandom} from './random.ts';
 import type {BuildingKind,BuildingState,FactionId,FactionState,GameCommand,GameState,MapDefinition,Point,ResourceKind,UnitKind,UnitState} from '../shared/protocol.ts';
 
 const UNIT:Record<UnitKind,{hp:number,speed:number,damage:number,range:number,sight:number,cost:[number,number,number]}>= {
- villager:{hp:70,speed:88,damage:3,range:24,sight:210,cost:[0,50,0]},soldier:{hp:120,speed:100,damage:18,range:38,sight:240,cost:[0,60,30]},archer:{hp:78,speed:94,damage:14,range:165,sight:290,cost:[0,45,45]},cavalry:{hp:165,speed:138,damage:23,range:44,sight:270,cost:[0,80,70]}
+ villager:{hp:70,speed:70.4,damage:3,range:24,sight:210,cost:[0,50,0]},soldier:{hp:120,speed:80,damage:18,range:38,sight:240,cost:[0,60,30]},archer:{hp:78,speed:75.2,damage:14,range:165,sight:290,cost:[0,45,45]},cavalry:{hp:165,speed:110.4,damage:23,range:44,sight:270,cost:[0,80,70]}
 };
 const BUILDING:Record<BuildingKind,{hp:number,radius:number,cost:[number,number,number]}>= {town:{hp:1200,radius:68,cost:[0,0,0]},house:{hp:450,radius:42,cost:[80,0,0]},barracks:{hp:700,radius:56,cost:[140,0,0]}};
 const TRAINING_TIME:Record<UnitKind,number>={villager:4000,soldier:5000,archer:6000,cavalry:7000};

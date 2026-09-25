@@ -1,6 +1,9 @@
 import type {FactionId,GameCommand,ResourceKind,UnitState} from '../shared/protocol.ts';
 import {GameEngine} from '../engine/game-engine.ts';
 
+const ATTACK_DELAY=90_000;
+const MIN_ATTACK_ARMY=4;
+
 export class CpuController{
  private nextThink=0;
  factionId:FactionId;
@@ -18,7 +21,7 @@ export class CpuController{
   if(f.popCap-current-reserved<3&&f.wood>=80&&workers[0]&&!unfinished.some(b=>b.kind==='house')){const p=this.site(engine,'house',town!);if(p)this.send(engine,{type:'BUILD',builderIds:[workers[0].id],building:'house',...p})}
   if(!anyBarracks&&f.wood>=140&&workers[1]){const p=this.site(engine,'barracks',town!);if(p)this.send(engine,{type:'BUILD',builderIds:[workers[1].id],building:'barracks',...p})}
   if(barracks&&army.length+queued.filter(x=>x.kind!=='villager').length<12)this.send(engine,{type:'TRAIN',buildingId:barracks.id,unit:f.age>=2?'archer':'soldier'});
-  if(army.length>=2){const enemies=[...s.units,...s.buildings].filter(x=>x.factionId!==this.factionId&&!s.factions.find(f=>f.id===x.factionId)?.defeated),target=enemies.sort((a,b)=>Math.hypot(a.x-army[0].x,a.y-army[0].y)-Math.hypot(b.x-army[0].x,b.y-army[0].y))[0];if(target)this.send(engine,{type:'ATTACK',unitIds:army.map(x=>x.id),targetId:target.id})}
+  if(s.timeMs>=ATTACK_DELAY&&army.length>=MIN_ATTACK_ARMY){const enemies=[...s.units,...s.buildings].filter(x=>x.factionId!==this.factionId&&!s.factions.find(f=>f.id===x.factionId)?.defeated),target=enemies.sort((a,b)=>Math.hypot(a.x-army[0].x,a.y-army[0].y)-Math.hypot(b.x-army[0].x,b.y-army[0].y))[0];if(target)this.send(engine,{type:'ATTACK',unitIds:army.map(x=>x.id),targetId:target.id})}
  }
  private site(engine:GameEngine,kind:'house'|'barracks',town:{x:number;y:number}){for(let ring=0;ring<4;ring++)for(let i=0;i<12;i++){const a=i*Math.PI/6,d=190+ring*75,x=town.x+Math.cos(a)*d,y=town.y+Math.sin(a)*d;if(engine.canBuildAt(kind,x,y))return{x,y}}}
  private send(engine:GameEngine,command:GameCommand){engine.command(this.factionId,command)}
