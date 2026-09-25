@@ -19,6 +19,10 @@ test('two-player online uses the original single-player world size and side plac
  assert.deepEqual(towns.map(t=>[t.x,t.y]),[[420,760],[2000,760]]);
 });
 
+test('every faction starts with visible nearby food, wood and gold',()=>{
+ const e=engine(2);for(const town of e.state.buildings.filter(x=>x.kind==='town'))for(const kind of ['food','wood','gold'] as const){const nearest=Math.min(...e.state.map.resources.filter(r=>r.kind===kind).map(r=>Math.hypot(r.x-town.x,r.y-town.y)));assert.ok(nearest<=430,`${kind} is too far from faction ${town.factionId}: ${nearest}`)}
+});
+
 test('ownership validation rejects moving an enemy unit',()=>{
  const e=engine(),enemy=e.state.units.find(x=>x.factionId===1)!;
  assert.deepEqual(e.command(0,{type:'MOVE',unitIds:[enemy.id],target:{x:500,y:500}}),{ok:false,reason:'INVALID_MOVE'});
@@ -99,6 +103,16 @@ test('idle soldiers automatically retaliate against a nearby enemy',()=>{
  a.kind='soldier';a.hp=a.maxHp=120;b.kind='soldier';b.hp=b.maxHp=120;a.x=900;a.y=700;b.x=950;b.y=700;
  const before=b.hp;for(let i=0;i<12;i++)e.tick(100);assert.ok(b.hp<before,'nearby enemy was never attacked');
 });
+
+for(const kind of ['soldier','archer','cavalry'] as const){
+ test(`${kind} attacks enemy units and buildings`,()=>{
+  const e=engine(),attacker=e.state.units.find(x=>x.factionId===0)!,defender=e.state.units.find(x=>x.factionId===1)!,town=e.state.buildings.find(x=>x.factionId===1&&x.kind==='town')!;attacker.kind=kind;attacker.hp=attacker.maxHp=kind==='cavalry'?165:kind==='archer'?78:120;defender.x=900;defender.y=700;attacker.x=kind==='archer'?760:850;attacker.y=700;let before=defender.hp;assert.equal(e.command(0,{type:'ATTACK',unitIds:[attacker.id],targetId:defender.id}).ok,true);for(let i=0;i<20&&defender.hp===before;i++)e.tick(100);assert.ok(defender.hp<before,`${kind} did not damage a unit`);
+  attacker.x=kind==='archer'?town.x-210:town.x-105;attacker.y=town.y;before=town.hp;assert.equal(e.command(0,{type:'ATTACK',unitIds:[attacker.id],targetId:town.id}).ok,true);for(let i=0;i<30&&town.hp===before;i++)e.tick(100);assert.ok(town.hp<before,`${kind} did not damage a building`);
+ });
+ test(`idle ${kind} automatically engages a nearby attacker`,()=>{
+  const e=engine(),a=e.state.units.find(x=>x.factionId===0)!,b=e.state.units.find(x=>x.factionId===1)!;a.kind=kind;a.hp=a.maxHp=kind==='cavalry'?165:kind==='archer'?78:120;b.kind='soldier';b.hp=b.maxHp=120;a.x=900;a.y=700;b.x=kind==='archer'?1040:950;b.y=700;const before=b.hp;for(let i=0;i<20&&b.hp===before;i++)e.tick(100);assert.ok(b.hp<before,`${kind} did not auto-engage`);
+ });
+}
 
 test('active movement orders survive a Durable Object snapshot restore',()=>{
  const e=engine(),unit=e.state.units.find(x=>x.factionId===0)!;
