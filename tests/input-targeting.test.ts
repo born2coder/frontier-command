@@ -16,3 +16,7 @@ test('the closest friendly unit is selected in a dense group',()=>{
 test('resource and building taps still work away from friendly units',()=>{
  const s=state(),resource=s.map.resources[0],enemyTown=s.buildings.find(b=>b.factionId===1)!;s.units.filter(u=>u.factionId===0).forEach(u=>{u.x=100;u.y=100});assert.equal(pickTapTarget(s,0,{x:resource.x,y:resource.y},1,true)?.type,'resource');assert.equal(pickTapTarget(s,0,{x:enemyTown.x+60,y:enemyTown.y},1,false)?.type,'building');
 });
+
+test('an enemy villager wins over a resource at the same point',()=>{
+ const s=state(),enemy=s.units.find(u=>u.factionId===1&&u.kind==='villager')!,resource=s.map.resources[0];enemy.x=resource.x;enemy.y=resource.y;s.units.filter(u=>u.factionId===0).forEach(u=>{u.x=100;u.y=100});const target=pickTapTarget(s,0,{x:resource.x,y:resource.y},1,true);assert.equal(target?.type,'enemy-unit');assert.equal(target?.value.id,enemy.id);
+});

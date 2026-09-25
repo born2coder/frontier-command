@@ -46,13 +46,17 @@ test('other villagers can continue an unfinished building without paying twice',
 
 test('training and research use faction resources and population',()=>{
  const e=engine(),f=e.state.factions[0],town=e.state.buildings.find(x=>x.factionId===0&&x.kind==='town')!;
- const before=e.state.units.length;assert.equal(e.command(0,{type:'TRAIN',buildingId:town.id,unit:'villager'}).ok,true);assert.equal(e.state.units.length,before+1);assert.equal(f.food,450);
+ const before=e.state.units.length;assert.equal(e.command(0,{type:'TRAIN',buildingId:town.id,unit:'villager'}).ok,true);assert.equal(e.state.units.length,before);assert.equal(town.trainingQueue?.length,1);e.tick(3900);assert.equal(e.state.units.length,before);e.tick(100);assert.equal(e.state.units.length,before+1);assert.equal(f.food,450);
  f.age=2;
  assert.equal(e.command(0,{type:'RESEARCH',buildingId:town.id,tech:'economy'}).ok,true);assert.equal(f.gatherBonus,.25);assert.equal(e.command(0,{type:'RESEARCH',buildingId:town.id,tech:'economy'}).ok,false);
 });
 
 test('units trained repeatedly at one building spawn in separate positions',()=>{
- const e=engine(),f=e.state.factions[0];f.age=3;f.food=f.gold=1000;f.popCap=30;const barracks={id:9100,factionId:0 as FactionId,kind:'barracks' as const,x:800,y:700,hp:700,maxHp:700,progress:1,state:'idle' as const};e.state.buildings.push(barracks);for(const kind of ['soldier','soldier','archer','cavalry'] as const)assert.equal(e.command(0,{type:'TRAIN',buildingId:barracks.id,unit:kind}).ok,true);const trained=e.state.units.filter(u=>u.id>10&&u.factionId===0);assert.equal(trained.length,4);for(let i=0;i<trained.length;i++)for(let j=i+1;j<trained.length;j++)assert.ok(Math.hypot(trained[i].x-trained[j].x,trained[i].y-trained[j].y)>=30,'trained units overlap at spawn');
+ const e=engine(),f=e.state.factions[0];f.age=3;f.food=f.gold=1000;f.popCap=30;const barracks={id:9100,factionId:0 as FactionId,kind:'barracks' as const,x:800,y:700,hp:700,maxHp:700,progress:1,state:'idle' as const};e.state.buildings.push(barracks);for(const kind of ['soldier','soldier','archer','cavalry'] as const)assert.equal(e.command(0,{type:'TRAIN',buildingId:barracks.id,unit:kind}).ok,true);for(let i=0;i<230;i++)e.tick(100);const trained=e.state.units.filter(u=>u.id>10&&u.factionId===0);assert.equal(trained.length,4);for(let i=0;i<trained.length;i++)for(let j=i+1;j<trained.length;j++)assert.ok(Math.hypot(trained[i].x-trained[j].x,trained[i].y-trained[j].y)>=30,'trained units overlap at spawn');
+});
+
+test('queued training survives restore and reserves population capacity',()=>{
+ const e=engine(),f=e.state.factions[0],town=e.state.buildings.find(x=>x.factionId===0&&x.kind==='town')!;f.popCap=e.state.units.filter(u=>u.factionId===0).length+1;assert.equal(e.command(0,{type:'TRAIN',buildingId:town.id,unit:'villager'}).ok,true);assert.equal(e.command(0,{type:'TRAIN',buildingId:town.id,unit:'villager'}).ok,false);const restored=GameEngine.restore(e.snapshot());assert.equal(restored.state.buildings.find(x=>x.id===town.id)?.trainingQueue?.length,1);restored.tick(3999);assert.equal(restored.state.units.filter(u=>u.factionId===0).length,5);restored.tick(1);assert.equal(restored.state.units.filter(u=>u.factionId===0).length,6);
 });
 
 test('server-side fog omits unseen enemy coordinates',()=>{
@@ -81,7 +85,7 @@ test('a full match supports gathering, both buildings, age advancement, combat, 
  const built=[] as Array<'house'|'barracks'>;for(const kind of ['house','barracks'] as const){let placed=false;for(let y=420;y<=1200&&!placed;y+=140)for(let x=300;x<=1100&&!placed;x+=140){if(e.command(0,{type:'BUILD',builderIds:[worker.id],building:kind,x,y}).ok){built.push(kind);placed=true;for(let i=0;i<300;i++)e.tick(100)}}}
  assert.deepEqual(built,['house','barracks']);assert.equal(f.popCap,15);
  const town=e.state.buildings.find(x=>x.factionId===0&&x.kind==='town')!;assert.equal(e.command(0,{type:'ADVANCE_AGE',buildingId:town.id}).ok,true);assert.equal(f.age,2);
- const barracks=e.state.buildings.find(x=>x.factionId===0&&x.kind==='barracks'&&x.progress===1)!;assert.equal(e.command(0,{type:'TRAIN',buildingId:barracks.id,unit:'soldier'}).ok,true);
+ const barracks=e.state.buildings.find(x=>x.factionId===0&&x.kind==='barracks'&&x.progress===1)!;assert.equal(e.command(0,{type:'TRAIN',buildingId:barracks.id,unit:'soldier'}).ok,true);for(let i=0;i<50;i++)e.tick(100);
  const fighter=e.state.units.find(x=>x.factionId===0&&x.kind==='soldier')!,enemyTown=e.state.buildings.find(x=>x.factionId===1&&x.kind==='town')!;fighter.x=enemyTown.x+70;fighter.y=enemyTown.y;enemyTown.hp=1;
  assert.equal(e.command(0,{type:'ATTACK',unitIds:[fighter.id],targetId:enemyTown.id}).ok,true);e.tick(100);assert.equal(e.state.phase,'ended');assert.equal(e.state.winner,0);assert.equal(e.state.factions[1].defeated,true);
 });

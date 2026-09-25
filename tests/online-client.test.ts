@@ -9,10 +9,12 @@ test('every required online UI id exists in the generated markup',()=>{
  assert.deepEqual(queried.filter(id=>!ids.has(id)),[]);
 });
 
-test('touch gestures pan the map while mouse drags keep box selection',()=>{
+test('touch gestures pan the map while range mode enables touch box selection',()=>{
  const source=readFileSync(new URL('../src/client/online-client.ts',import.meta.url),'utf8');
  assert.match(source,/e\.pointerType==='touch'/);
  assert.match(source,/view\.x=touchPanStart\.viewX-/);
- assert.match(source,/if\(!wasTouchPan\)selectBox/);
+ assert.match(source,/networkRangeSelect/);
+ assert.match(source,/!rangeSelecting/);
+ assert.match(source,/selectBox\(start,current\)/);
  assert.match(source,/pointers\.size===2&&gestureStart/);
 });

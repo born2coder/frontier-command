@@ -9,7 +9,8 @@ export type EntityState = 'idle'|'moving'|'gathering'|'building'|'attacking'|'de
 export interface Point {x:number;y:number}
 export interface FactionState {id:FactionId;name:string;color:string;kind:'human'|'cpu';wood:number;food:number;gold:number;popCap:number;age:number;attackBonus:number;gatherBonus:number;armorBonus:number;research:string[];defeated:boolean}
 export interface UnitState {id:number;factionId:FactionId;kind:UnitKind;x:number;y:number;hp:number;maxHp:number;state:EntityState;target?:Point;targetId?:number;cargo?:number;cargoKind?:ResourceKind;nextAttackAt:number}
-export interface BuildingState {id:number;factionId:FactionId;kind:BuildingKind;x:number;y:number;hp:number;maxHp:number;progress:number;state:EntityState}
+export interface TrainingQueueItem {kind:UnitKind;readyAt:number}
+export interface BuildingState {id:number;factionId:FactionId;kind:BuildingKind;x:number;y:number;hp:number;maxHp:number;progress:number;state:EntityState;trainingQueue?:TrainingQueueItem[]}
 export interface ResourceState {id:number;kind:ResourceKind;x:number;y:number;amount:number}
 export interface MapDefinition {seed:number;width:number;height:number;resources:ResourceState[]}
 export interface GameState {roomId:string;seed:number;tick:number;timeMs:number;phase:'countdown'|'playing'|'ended';startAt:number;winner?:FactionId;factions:FactionState[];units:UnitState[];buildings:BuildingState[];map:MapDefinition;events:GameEvent[];fog:Partial<Record<FactionId,string[]>>}
