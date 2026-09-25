@@ -58,6 +58,19 @@ test('combat damages and destroys the enemy town, then declares a winner',()=>{
  assert.equal(e.state.phase,'ended');assert.equal(e.state.winner,0);
 });
 
+test('a full match supports gathering, both buildings, age advancement, combat, victory and defeat',()=>{
+ const e=engine(),f=e.state.factions[0],worker=e.state.units.find(x=>x.factionId===0&&x.kind==='villager')!,resource=e.state.map.resources[0];
+ worker.x=resource.x;worker.y=resource.y;const gatheredBefore=f[resource.kind];
+ assert.equal(e.command(0,{type:'GATHER',unitIds:[worker.id],targetId:resource.id}).ok,true);e.tick(1000);assert.ok(f[resource.kind]>gatheredBefore,'gathering did not add resources');
+ f.wood=1000;f.food=1000;f.gold=1000;
+ const built=[] as Array<'house'|'barracks'>;for(const kind of ['house','barracks'] as const){let placed=false;for(let y=420;y<=1200&&!placed;y+=140)for(let x=300;x<=1100&&!placed;x+=140){if(e.command(0,{type:'BUILD',builderIds:[worker.id],building:kind,x,y}).ok){built.push(kind);placed=true;for(let i=0;i<300;i++)e.tick(100)}}}
+ assert.deepEqual(built,['house','barracks']);assert.equal(f.popCap,15);
+ const town=e.state.buildings.find(x=>x.factionId===0&&x.kind==='town')!;assert.equal(e.command(0,{type:'ADVANCE_AGE',buildingId:town.id}).ok,true);assert.equal(f.age,2);
+ const barracks=e.state.buildings.find(x=>x.factionId===0&&x.kind==='barracks'&&x.progress===1)!;assert.equal(e.command(0,{type:'TRAIN',buildingId:barracks.id,unit:'soldier'}).ok,true);
+ const fighter=e.state.units.find(x=>x.factionId===0&&x.kind==='soldier')!,enemyTown=e.state.buildings.find(x=>x.factionId===1&&x.kind==='town')!;fighter.x=enemyTown.x+70;fighter.y=enemyTown.y;enemyTown.hp=1;
+ assert.equal(e.command(0,{type:'ATTACK',unitIds:[fighter.id],targetId:enemyTown.id}).ok,true);e.tick(100);assert.equal(e.state.phase,'ended');assert.equal(e.state.winner,0);assert.equal(e.state.factions[1].defeated,true);
+});
+
 for(const count of [2,3,4])test(`${count} active factions initialize independently`,()=>{const e=engine(count);for(let i=0;i<count;i++){assert.equal(e.state.units.filter(x=>x.factionId===i).length,5);assert.equal(e.state.buildings.filter(x=>x.factionId===i).length,1)}});
 
 test('200 units tick without a fatal stall',()=>{
