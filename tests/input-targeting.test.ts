@@ -20,3 +20,7 @@ test('resource and building taps still work away from friendly units',()=>{
 test('an enemy villager wins over a resource at the same point',()=>{
  const s=state(),enemy=s.units.find(u=>u.factionId===1&&u.kind==='villager')!,resource=s.map.resources[0];enemy.x=resource.x;enemy.y=resource.y;s.units.filter(u=>u.factionId===0).forEach(u=>{u.x=100;u.y=100});const target=pickTapTarget(s,0,{x:resource.x,y:resource.y},1,true);assert.equal(target?.type,'enemy-unit');assert.equal(target?.value.id,enemy.id);
 });
+
+test('an enemy is targeted when a selected squad taps into a mixed melee cluster',()=>{
+ const s=state(),own=s.units.find(u=>u.factionId===0)!,enemy=s.units.find(u=>u.factionId===1)!;own.x=500;own.y=500;enemy.x=512;enemy.y=500;const target=pickTapTarget(s,0,{x:503,y:500},1,false,true);assert.equal(target?.type,'enemy-unit');assert.equal(target?.value.id,enemy.id);
+});

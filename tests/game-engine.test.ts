@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {GameEngine} from '../src/engine/game-engine.ts';
+import {CpuController} from '../src/ai/cpu-controller.ts';
 import type {FactionId,UnitState} from '../src/shared/protocol.ts';
 
 const engine=(count=2)=>{const e=new GameEngine('TEST01',12345,Array.from({length:count},(_,i)=>({name:`P${i+1}`,kind:i?'cpu':'human'} as const)));e.state.phase='playing';return e};
@@ -94,6 +95,10 @@ for(const kind of ['wood','food','gold'] as const)test(`${kind} gatherers return
  const e=engine(),f=e.state.factions[0],worker=e.state.units.find(x=>x.factionId===0&&x.kind==='villager')!,resource=e.state.map.resources.find(x=>x.kind===kind)!;worker.x=resource.x;worker.y=resource.y;const before=f[kind];assert.equal(e.command(0,{type:'GATHER',unitIds:[worker.id],targetId:resource.id}).ok,true);for(let i=0;i<400&&f[kind]===before;i++)e.tick(100);assert.ok(f[kind]>before,`${kind} cargo was not deposited`);
 });
 
+test('a depleted resource disappears after its final cargo is delivered',()=>{
+ const e=engine(),worker=e.state.units.find(x=>x.factionId===0&&x.kind==='villager')!,resource=e.state.map.resources[0];resource.amount=1;worker.x=resource.x;worker.y=resource.y;assert.equal(e.command(0,{type:'GATHER',unitIds:[worker.id],targetId:resource.id}).ok,true);for(let i=0;i<500&&e.state.map.resources.some(x=>x.id===resource.id);i++)e.tick(100);assert.equal(e.state.map.resources.some(x=>x.id===resource.id),false);
+});
+
 for(const count of [2,3,4])test(`${count} active factions initialize independently`,()=>{const e=engine(count);for(let i=0;i<count;i++){assert.equal(e.state.units.filter(x=>x.factionId===i).length,5);assert.equal(e.state.buildings.filter(x=>x.factionId===i).length,1)}});
 
 test('200 units tick without a fatal stall',()=>{
@@ -114,6 +119,14 @@ test('idle soldiers automatically retaliate against a nearby enemy',()=>{
  const e=engine(),a=e.state.units.find(x=>x.factionId===0)!,b=e.state.units.find(x=>x.factionId===1)!;
  a.kind='soldier';a.hp=a.maxHp=120;b.kind='soldier';b.hp=b.maxHp=120;a.x=900;a.y=700;b.x=950;b.y=700;
  const before=b.hp;for(let i=0;i<12;i++)e.tick(100);assert.ok(b.hp<before,'nearby enemy was never attacked');
+});
+
+test('a moving soldier interrupts its order and retaliates against an attacking villager',()=>{
+ const e=engine(),soldier=e.state.units.find(x=>x.factionId===0)!,villager=e.state.units.find(x=>x.factionId===1)!;soldier.kind='soldier';soldier.hp=soldier.maxHp=120;soldier.x=900;soldier.y=700;villager.x=930;villager.y=700;assert.equal(e.command(0,{type:'MOVE',unitIds:[soldier.id],target:{x:400,y:1200}}).ok,true);assert.equal(e.command(1,{type:'ATTACK',unitIds:[villager.id],targetId:soldier.id}).ok,true);const before=villager.hp;for(let i=0;i<25&&villager.hp===before;i++)e.tick(100);assert.ok(villager.hp<before,'soldier did not retaliate against the villager');
+});
+
+test('CPU completes military production and launches an attack',()=>{
+ const e=engine(),cpu=new CpuController(1),before=e.state.units.filter(u=>u.factionId===0).reduce((n,u)=>n+u.hp,0)+e.state.buildings.filter(b=>b.factionId===0).reduce((n,b)=>n+b.hp,0);for(let i=0;i<2400&&e.state.phase==='playing';i++){cpu.update(e);e.tick(100)}const military=e.state.units.filter(u=>u.factionId===1&&u.kind!=='villager'),after=e.state.units.filter(u=>u.factionId===0).reduce((n,u)=>n+u.hp,0)+e.state.buildings.filter(b=>b.factionId===0).reduce((n,b)=>n+b.hp,0);assert.ok(e.state.buildings.some(b=>b.factionId===1&&b.kind==='barracks'&&b.progress===1),'CPU did not finish a barracks');assert.ok(military.length>=2,'CPU did not train an army');assert.ok(after<before,'CPU army never damaged the opponent');
 });
 
 test('a packed defending army spreads out, moves and damages an intruder',()=>{

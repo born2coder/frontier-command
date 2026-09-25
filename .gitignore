@@ -3,6 +3,7 @@ dist/
 .vite/
 *.log
 .pnpm-store/
+.tmp/
 outputs/
 work/
 .github_known_hosts
