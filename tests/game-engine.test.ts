@@ -51,6 +51,10 @@ test('training and research use faction resources and population',()=>{
  assert.equal(e.command(0,{type:'RESEARCH',buildingId:town.id,tech:'economy'}).ok,true);assert.equal(f.gatherBonus,.25);assert.equal(e.command(0,{type:'RESEARCH',buildingId:town.id,tech:'economy'}).ok,false);
 });
 
+test('units trained repeatedly at one building spawn in separate positions',()=>{
+ const e=engine(),f=e.state.factions[0];f.age=3;f.food=f.gold=1000;f.popCap=30;const barracks={id:9100,factionId:0 as FactionId,kind:'barracks' as const,x:800,y:700,hp:700,maxHp:700,progress:1,state:'idle' as const};e.state.buildings.push(barracks);for(const kind of ['soldier','soldier','archer','cavalry'] as const)assert.equal(e.command(0,{type:'TRAIN',buildingId:barracks.id,unit:kind}).ok,true);const trained=e.state.units.filter(u=>u.id>10&&u.factionId===0);assert.equal(trained.length,4);for(let i=0;i<trained.length;i++)for(let j=i+1;j<trained.length;j++)assert.ok(Math.hypot(trained[i].x-trained[j].x,trained[i].y-trained[j].y)>=30,'trained units overlap at spawn');
+});
+
 test('server-side fog omits unseen enemy coordinates',()=>{
  const e=engine(4),enemy=e.state.units.find(x=>x.factionId===3)!;
  const view=e.visibleState(0);
@@ -82,6 +86,10 @@ test('a full match supports gathering, both buildings, age advancement, combat, 
  assert.equal(e.command(0,{type:'ATTACK',unitIds:[fighter.id],targetId:enemyTown.id}).ok,true);e.tick(100);assert.equal(e.state.phase,'ended');assert.equal(e.state.winner,0);assert.equal(e.state.factions[1].defeated,true);
 });
 
+for(const kind of ['wood','food','gold'] as const)test(`${kind} gatherers return cargo to the town`,()=>{
+ const e=engine(),f=e.state.factions[0],worker=e.state.units.find(x=>x.factionId===0&&x.kind==='villager')!,resource=e.state.map.resources.find(x=>x.kind===kind)!;worker.x=resource.x;worker.y=resource.y;const before=f[kind];assert.equal(e.command(0,{type:'GATHER',unitIds:[worker.id],targetId:resource.id}).ok,true);for(let i=0;i<400&&f[kind]===before;i++)e.tick(100);assert.ok(f[kind]>before,`${kind} cargo was not deposited`);
+});
+
 for(const count of [2,3,4])test(`${count} active factions initialize independently`,()=>{const e=engine(count);for(let i=0;i<count;i++){assert.equal(e.state.units.filter(x=>x.factionId===i).length,5);assert.equal(e.state.buildings.filter(x=>x.factionId===i).length,1)}});
 
 test('200 units tick without a fatal stall',()=>{
@@ -104,10 +112,17 @@ test('idle soldiers automatically retaliate against a nearby enemy',()=>{
  const before=b.hp;for(let i=0;i<12;i++)e.tick(100);assert.ok(b.hp<before,'nearby enemy was never attacked');
 });
 
+test('a packed defending army spreads out, moves and damages an intruder',()=>{
+ const e=engine(),intruder=e.state.units.find(x=>x.factionId===0)!;intruder.kind='soldier';intruder.hp=intruder.maxHp=400;intruder.x=850;intruder.y=700;const template=e.state.units.find(x=>x.factionId===1)!;const defenders=Array.from({length:8},(_,i)=>({...template,id:9200+i,kind:(i%3===0?'archer':i%3===1?'cavalry':'soldier') as UnitState['kind'],x:1000,y:700,hp:120,maxHp:120,state:'idle' as const,nextAttackAt:0}));e.state.units=[intruder,...defenders];const starts=defenders.map(u=>({x:u.x,y:u.y})),before=intruder.hp;for(let i=0;i<40;i++)e.tick(100);const moved=defenders.filter((u,i)=>Math.hypot(u.x-starts[i].x,u.y-starts[i].y)>20).length;assert.ok(moved>=6,`only ${moved} defenders moved`);assert.ok(intruder.hp<before,'defenders never attacked the intruder');const distinct=new Set(defenders.map(u=>`${Math.round(u.x/10)}:${Math.round(u.y/10)}`));assert.ok(distinct.size>=6,'defenders remained stacked');
+});
+
 for(const kind of ['soldier','archer','cavalry'] as const){
  test(`${kind} attacks enemy units and buildings`,()=>{
   const e=engine(),attacker=e.state.units.find(x=>x.factionId===0)!,defender=e.state.units.find(x=>x.factionId===1)!,town=e.state.buildings.find(x=>x.factionId===1&&x.kind==='town')!;attacker.kind=kind;attacker.hp=attacker.maxHp=kind==='cavalry'?165:kind==='archer'?78:120;defender.x=900;defender.y=700;attacker.x=kind==='archer'?760:850;attacker.y=700;let before=defender.hp;assert.equal(e.command(0,{type:'ATTACK',unitIds:[attacker.id],targetId:defender.id}).ok,true);for(let i=0;i<20&&defender.hp===before;i++)e.tick(100);assert.ok(defender.hp<before,`${kind} did not damage a unit`);
   attacker.x=kind==='archer'?town.x-210:town.x-105;attacker.y=town.y;before=town.hp;assert.equal(e.command(0,{type:'ATTACK',unitIds:[attacker.id],targetId:town.id}).ok,true);for(let i=0;i<30&&town.hp===before;i++)e.tick(100);assert.ok(town.hp<before,`${kind} did not damage a building`);
+ });
+ for(const buildingKind of ['house','barracks'] as const)test(`${kind} damages an enemy ${buildingKind}`,()=>{
+  const e=engine(),attacker=e.state.units.find(x=>x.factionId===0)!,target={id:9000,factionId:1 as FactionId,kind:buildingKind,x:1000,y:700,hp:buildingKind==='house'?450:700,maxHp:buildingKind==='house'?450:700,progress:1,state:'idle' as const};e.state.buildings.push(target);attacker.kind=kind;attacker.hp=attacker.maxHp=kind==='cavalry'?165:kind==='archer'?78:120;attacker.x=kind==='archer'?790:875;attacker.y=700;const before=target.hp;assert.equal(e.command(0,{type:'ATTACK',unitIds:[attacker.id],targetId:target.id}).ok,true);for(let i=0;i<30&&target.hp===before;i++)e.tick(100);assert.ok(target.hp<before,`${kind} did not damage ${buildingKind}`);
  });
  test(`idle ${kind} automatically engages a nearby attacker`,()=>{
   const e=engine(),a=e.state.units.find(x=>x.factionId===0)!,b=e.state.units.find(x=>x.factionId===1)!;a.kind=kind;a.hp=a.maxHp=kind==='cavalry'?165:kind==='archer'?78:120;b.kind='soldier';b.hp=b.maxHp=120;a.x=900;a.y=700;b.x=kind==='archer'?1040:950;b.y=700;const before=b.hp;for(let i=0;i<20&&b.hp===before;i++)e.tick(100);assert.ok(b.hp<before,`${kind} did not auto-engage`);
