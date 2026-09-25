@@ -8,8 +8,15 @@ const engine=(count=2)=>{const e=new GameEngine('TEST01',12345,Array.from({lengt
 test('same seed produces the same fair four-corner map',()=>{
  const a=engine(4),b=engine(4);
  assert.deepEqual(a.state.map,b.state.map);
+ assert.deepEqual([a.state.map.width,a.state.map.height],[3600,2400]);
  assert.equal(a.state.factions.length,4);
  assert.equal(a.state.buildings.filter(x=>x.kind==='town').length,4);
+});
+
+test('two-player online uses the original single-player world size and side placement',()=>{
+ const e=engine(2),towns=e.state.buildings.filter(x=>x.kind==='town');
+ assert.deepEqual([e.state.map.width,e.state.map.height],[2400,1600]);
+ assert.deepEqual(towns.map(t=>[t.x,t.y]),[[420,760],[2000,760]]);
 });
 
 test('ownership validation rejects moving an enemy unit',()=>{
