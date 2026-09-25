@@ -65,3 +65,25 @@ test('200 units tick without a fatal stall',()=>{
  const started=performance.now();for(let i=0;i<100;i++)e.tick(100);const elapsed=performance.now()-started;
  assert.equal(e.state.units.length,200);assert.ok(elapsed<2000,`100 ticks took ${elapsed}ms`);
 });
+
+test('server pathing moves around a completed building instead of getting stuck in it',()=>{
+ const e=engine(),unit=e.state.units.find(x=>x.factionId===0)!;unit.x=220;unit.y=300;
+ const town=e.state.buildings.find(x=>x.factionId===0&&x.kind==='town')!;
+ assert.equal(e.command(0,{type:'MOVE',unitIds:[unit.id],target:{x:520,y:300}}).ok,true);
+ let closest=Infinity;for(let i=0;i<80;i++){e.tick(100);closest=Math.min(closest,Math.hypot(unit.x-town.x,unit.y-town.y))}
+ assert.ok(closest>76,`unit entered town collision radius: ${closest}`);assert.ok(unit.x>470,`unit did not get around the town: ${unit.x}`);
+});
+
+test('idle soldiers automatically retaliate against a nearby enemy',()=>{
+ const e=engine(),a=e.state.units.find(x=>x.factionId===0)!,b=e.state.units.find(x=>x.factionId===1)!;
+ a.kind='soldier';a.hp=a.maxHp=120;b.kind='soldier';b.hp=b.maxHp=120;a.x=900;a.y=700;b.x=950;b.y=700;
+ const before=b.hp;for(let i=0;i<12;i++)e.tick(100);assert.ok(b.hp<before,'nearby enemy was never attacked');
+});
+
+test('active movement orders survive a Durable Object snapshot restore',()=>{
+ const e=engine(),unit=e.state.units.find(x=>x.factionId===0)!;
+ assert.equal(e.command(0,{type:'MOVE',unitIds:[unit.id],target:{x:1000,y:900}}).ok,true);e.tick(100);
+ const restored=GameEngine.restore(e.snapshot()),copy=restored.state.units.find(x=>x.id===unit.id)!,before={x:copy.x,y:copy.y};
+ for(let i=0;i<10;i++)restored.tick(100);const after=restored.state.units.find(x=>x.id===unit.id)!;
+ assert.ok(Math.hypot(after.x-before.x,after.y-before.y)>20,'movement order was lost after restore');
+});
