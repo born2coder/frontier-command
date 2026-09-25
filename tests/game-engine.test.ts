@@ -1,0 +1,67 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {GameEngine} from '../src/engine/game-engine.ts';
+import type {FactionId,UnitState} from '../src/shared/protocol.ts';
+
+const engine=(count=2)=>{const e=new GameEngine('TEST01',12345,Array.from({length:count},(_,i)=>({name:`P${i+1}`,kind:i?'cpu':'human'} as const)));e.state.phase='playing';return e};
+
+test('same seed produces the same fair four-corner map',()=>{
+ const a=engine(4),b=engine(4);
+ assert.deepEqual(a.state.map,b.state.map);
+ assert.equal(a.state.factions.length,4);
+ assert.equal(a.state.buildings.filter(x=>x.kind==='town').length,4);
+});
+
+test('ownership validation rejects moving an enemy unit',()=>{
+ const e=engine(),enemy=e.state.units.find(x=>x.factionId===1)!;
+ assert.deepEqual(e.command(0,{type:'MOVE',unitIds:[enemy.id],target:{x:500,y:500}}),{ok:false,reason:'INVALID_MOVE'});
+});
+
+test('house construction consumes resources and increases population only when complete',()=>{
+ const e=engine(),f=e.state.factions[0],worker=e.state.units.find(x=>x.factionId===0)!,wood=f.wood;
+ let result:{ok:boolean}={ok:false};for(const [x,y] of [[600,500],[520,650],[720,300],[360,650],[760,520]]){result=e.command(0,{type:'BUILD',builderIds:[worker.id],building:'house',x,y});if(result.ok)break}
+ assert.equal(result.ok,true);assert.equal(f.wood,wood-80);assert.equal(f.popCap,10);
+ for(let i=0;i<500;i++)e.tick(100);
+ assert.equal(f.popCap,15);
+});
+
+test('other villagers can continue an unfinished building without paying twice',()=>{
+ const e=engine(),workers=e.state.units.filter(x=>x.factionId===0&&x.kind==='villager'),f=e.state.factions[0];
+ let placed=false;for(const [x,y] of [[600,500],[520,650],[720,300],[360,650]]){const result=e.command(0,{type:'BUILD',builderIds:[workers[0].id],building:'house',x,y});if(result.ok){placed=true;break}}
+ assert.equal(placed,true);const building=e.state.buildings.find(x=>x.factionId===0&&x.kind==='house')!,wood=f.wood;
+ assert.equal(e.command(0,{type:'CONTINUE_BUILD',builderIds:[workers[1].id,workers[2].id],buildingId:building.id}).ok,true);
+ assert.equal(f.wood,wood);for(let i=0;i<350;i++)e.tick(100);assert.equal(building.progress,1);assert.equal(f.popCap,15);
+});
+
+test('training and research use faction resources and population',()=>{
+ const e=engine(),f=e.state.factions[0],town=e.state.buildings.find(x=>x.factionId===0&&x.kind==='town')!;
+ const before=e.state.units.length;assert.equal(e.command(0,{type:'TRAIN',buildingId:town.id,unit:'villager'}).ok,true);assert.equal(e.state.units.length,before+1);assert.equal(f.food,450);
+ assert.equal(e.command(0,{type:'RESEARCH',buildingId:town.id,tech:'economy'}).ok,true);assert.equal(f.gatherBonus,.25);assert.equal(e.command(0,{type:'RESEARCH',buildingId:town.id,tech:'economy'}).ok,false);
+});
+
+test('server-side fog omits unseen enemy coordinates',()=>{
+ const e=engine(4),enemy=e.state.units.find(x=>x.factionId===3)!;
+ const view=e.visibleState(0);
+ assert.equal(view.units.some(x=>x.id===enemy.id),false);
+ assert.equal(JSON.stringify(view).includes(`\"id\":${enemy.id},\"factionId\":3`),false);
+});
+
+test('explored fog remains explored after a scout leaves',()=>{
+ const e=engine(),scout=e.state.units.find(x=>x.factionId===0)!;scout.x=1200;scout.y=800;e.tick(100);const seen=new Set(e.visibleState(0).fog[0]);assert.ok(seen.has('10:6'));
+ scout.x=360;scout.y=300;e.tick(100);assert.ok(new Set(e.visibleState(0).fog[0]).has('10:6'));
+});
+
+test('combat damages and destroys the enemy town, then declares a winner',()=>{
+ const e=engine(),fighter=e.state.units.find(x=>x.factionId===0)!;fighter.kind='soldier';fighter.x=2010;fighter.y=300;
+ const town=e.state.buildings.find(x=>x.factionId===1&&x.kind==='town')!;town.hp=10;
+ assert.equal(e.command(0,{type:'ATTACK',unitIds:[fighter.id],targetId:town.id}).ok,true);e.tick(100);
+ assert.equal(e.state.phase,'ended');assert.equal(e.state.winner,0);
+});
+
+for(const count of [2,3,4])test(`${count} active factions initialize independently`,()=>{const e=engine(count);for(let i=0;i<count;i++){assert.equal(e.state.units.filter(x=>x.factionId===i).length,5);assert.equal(e.state.buildings.filter(x=>x.factionId===i).length,1)}});
+
+test('200 units tick without a fatal stall',()=>{
+ const e=engine(4),template=e.state.units[0],units:UnitState[]=[];for(let faction=0;faction<4;faction++)for(let i=0;i<50;i++)units.push({...template,id:2000+faction*50+i,factionId:faction as FactionId,kind:'soldier',x:200+faction*550+(i%10)*31,y:500+Math.floor(i/10)*31,hp:120,maxHp:120,state:'idle',nextAttackAt:0});e.state.units=units;
+ const started=performance.now();for(let i=0;i<100;i++)e.tick(100);const elapsed=performance.now()-started;
+ assert.equal(e.state.units.length,200);assert.ok(elapsed<2000,`100 ticks took ${elapsed}ms`);
+});

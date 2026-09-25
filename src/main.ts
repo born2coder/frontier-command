@@ -4,6 +4,7 @@ import {GridPathfinder,type Point} from './pathfinding';
 import {attackReach as calculateAttackReach,combatSlotOffset,combatStandDistance,contactDistance,shouldRepathCombat,shouldTakeContactTarget} from './combat-rules';
 import {canContinueConstruction,isBuilderUnit,shouldResumeConstructionOnTap} from './order-rules';
 import {avoidanceTurns,separationOffsets} from './movement-rules';
+import {initOnline} from './client/online-client';
 
 type Owner='player'|'enemy';
 type UnitType='villager'|'soldier'|'archer'|'cavalry';
@@ -145,4 +146,5 @@ class GameScene extends Phaser.Scene{
  finish(winner:Owner){if(this.result)return;this.result=winner==='player'?'あなたの勝利':'敵軍の勝利';const elapsed=Math.max(0,Math.floor((this.time.now-this.startTime)/1000)),minutes=Math.floor(elapsed/60).toString().padStart(2,'0'),seconds=(elapsed%60).toString().padStart(2,'0');document.querySelector('#goal')!.textContent=this.result;document.querySelector('#resultTitle')!.textContent=winner==='player'?'勝利':'敗北';document.querySelector('#resultWinner')!.textContent=`勝者：${this.result}`;document.querySelector('#resultTime')!.textContent=`${minutes}:${seconds}`;document.querySelector('#resultAge')!.textContent=ages[player.age-1];const overlay=document.querySelector<HTMLElement>('#resultOverlay')!;overlay.classList.add('show');overlay.setAttribute('aria-hidden','false');for(const u of this.units){u.target=undefined;u.attack=undefined}}
 }
 new Phaser.Game({type:Phaser.AUTO,parent:'app',backgroundColor:'#111713',scale:{mode:Phaser.Scale.RESIZE,width:window.innerWidth,height:window.innerHeight},render:{antialias:true,pixelArt:false},scene:GameScene});
+initOnline();
 

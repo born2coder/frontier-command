@@ -2,3 +2,9 @@ node_modules/
 dist/
 .vite/
 *.log
+.pnpm-store/
+outputs/
+work/
+.github_known_hosts
+push-once.mjs
+.device.json
