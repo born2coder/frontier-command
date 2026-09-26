@@ -9,9 +9,10 @@ const engine=(count=2)=>{const e=new GameEngine('TEST01',12345,Array.from({lengt
 test('same seed produces the same fair four-corner map',()=>{
  const a=engine(4),b=engine(4);
  assert.deepEqual(a.state.map,b.state.map);
- assert.deepEqual([a.state.map.width,a.state.map.height],[3600,2400]);
+ assert.deepEqual([a.state.map.width,a.state.map.height],[5400,3600]);
  assert.equal(a.state.factions.length,4);
  assert.equal(a.state.buildings.filter(x=>x.kind==='town').length,4);
+ assert.deepEqual(a.state.buildings.filter(x=>x.kind==='town').map(t=>[t.x,t.y]),[[750,675],[4650,675],[750,2925],[4650,2925]]);
 });
 
 test('two-player online uses the original single-player world size and side placement',()=>{
@@ -43,6 +44,40 @@ test('other villagers can continue an unfinished building without paying twice',
  assert.equal(placed,true);const building=e.state.buildings.find(x=>x.factionId===0&&x.kind==='house')!,wood=f.wood;
  assert.equal(e.command(0,{type:'CONTINUE_BUILD',builderIds:[workers[1].id,workers[2].id],buildingId:building.id}).ok,true);
  assert.equal(f.wood,wood);for(let i=0;i<350;i++)e.tick(100);assert.equal(building.progress,1);assert.equal(f.popCap,15);
+});
+
+test('all units and buildings use the doubled durability values',()=>{
+ const e=engine(),f=e.state.factions[0],worker=e.state.units.find(x=>x.factionId===0)!;
+ assert.ok(e.state.units.every(u=>u.maxHp===140));
+ assert.ok(e.state.buildings.every(b=>b.maxHp===2400));
+ f.age=3;f.wood=f.food=f.gold=3000;f.popCap=30;
+ const barracks={id:9101,factionId:0 as FactionId,kind:'barracks' as const,x:800,y:700,hp:1400,maxHp:1400,progress:1,state:'idle' as const};e.state.buildings.push(barracks);
+ for(const kind of ['soldier','archer','cavalry'] as const)assert.equal(e.command(0,{type:'TRAIN',buildingId:barracks.id,unit:kind}).ok,true);
+ for(let i=0;i<80;i++)e.tick(250);
+ assert.equal(e.state.units.find(u=>u.factionId===0&&u.kind==='soldier')?.maxHp,240);
+ assert.equal(e.state.units.find(u=>u.factionId===0&&u.kind==='archer')?.maxHp,156);
+ assert.equal(e.state.units.find(u=>u.factionId===0&&u.kind==='cavalry')?.maxHp,330);
+ let site:{x:number;y:number}|undefined;for(let y=300;y<1400&&!site;y+=100)for(let x=300;x<1500&&!site;x+=100)if(e.canBuildAt('house',x,y))site={x,y};
+ assert.ok(site);assert.equal(e.command(0,{type:'BUILD',builderIds:[worker.id],building:'house',...site!}).ok,true);
+ assert.equal(e.state.buildings.find(b=>b.kind==='house')?.maxHp,900);
+ assert.equal(barracks.maxHp,1400);
+});
+
+test('a town center requires Castle Age and another villager can finish it',()=>{
+ const e=engine(),f=e.state.factions[0],workers=e.state.units.filter(u=>u.factionId===0&&u.kind==='villager');f.wood=f.gold=2000;
+ let site:{x:number;y:number}|undefined;for(let y=300;y<1400&&!site;y+=100)for(let x=300;x<1500&&!site;x+=100)if(e.canBuildAt('town',x,y))site={x,y};assert.ok(site);
+ assert.deepEqual(e.command(0,{type:'BUILD',builderIds:[workers[0].id],building:'town',...site!}),{ok:false,reason:'AGE_REQUIRED'});
+ f.age=3;const wood=f.wood,gold=f.gold;assert.equal(e.command(0,{type:'BUILD',builderIds:[workers[0].id],building:'town',...site!}).ok,true);
+ const town=e.state.buildings.find(b=>b.factionId===0&&b.kind==='town'&&b.progress<1)!;assert.equal(town.maxHp,2400);assert.equal(f.wood,wood-450);assert.equal(f.gold,gold-250);
+ assert.equal(e.command(0,{type:'CONTINUE_BUILD',builderIds:[workers[1].id,workers[2].id],buildingId:town.id}).ok,true);
+ for(let i=0;i<230&&town.progress<1;i++)e.tick(100);assert.equal(town.progress,1);
+});
+
+test('losing the original town does not defeat a faction while a second town remains',()=>{
+ const e=engine(),f=e.state.factions[0],original=e.state.buildings.find(b=>b.factionId===0&&b.kind==='town')!,enemy=e.state.units.find(u=>u.factionId===1)!;
+ e.state.buildings.push({id:9200,factionId:0,kind:'town',x:1100,y:1100,hp:2400,maxHp:2400,progress:1,state:'idle'});enemy.kind='soldier';enemy.hp=enemy.maxHp=240;enemy.x=original.x+80;enemy.y=original.y;original.hp=1;
+ assert.equal(e.command(1,{type:'ATTACK',unitIds:[enemy.id],targetId:original.id}).ok,true);e.tick(100);
+ assert.equal(f.defeated,false);assert.equal(e.state.phase,'playing');assert.ok(e.state.buildings.some(b=>b.id===9200));
 });
 
 test('training and research use faction resources and population',()=>{
@@ -103,6 +138,7 @@ for(const count of [2,3,4])test(`${count} active factions initialize independent
 
 test('200 units tick without a fatal stall',()=>{
  const e=engine(4),template=e.state.units[0],units:UnitState[]=[];for(let faction=0;faction<4;faction++)for(let i=0;i<50;i++)units.push({...template,id:2000+faction*50+i,factionId:faction as FactionId,kind:'soldier',x:200+faction*550+(i%10)*31,y:500+Math.floor(i/10)*31,hp:120,maxHp:120,state:'idle',nextAttackAt:0});e.state.units=units;
+ e.state.buildings=[];
  const started=performance.now();for(let i=0;i<100;i++)e.tick(100);const elapsed=performance.now()-started;
  assert.equal(e.state.units.length,200);assert.ok(elapsed<2000,`100 ticks took ${elapsed}ms`);
 });

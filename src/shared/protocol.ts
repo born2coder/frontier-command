@@ -21,7 +21,7 @@ export type GameCommand =
  | {type:'MOVE';unitIds:number[];target:Point}
  | {type:'ATTACK';unitIds:number[];targetId:number}
  | {type:'GATHER';unitIds:number[];targetId:number}
- | {type:'BUILD';builderIds:number[];building:Exclude<BuildingKind,'town'>;x:number;y:number}
+ | {type:'BUILD';builderIds:number[];building:BuildingKind;x:number;y:number}
  | {type:'CONTINUE_BUILD';builderIds:number[];buildingId:number}
  | {type:'TRAIN';buildingId:number;unit:UnitKind}
  | {type:'RESEARCH';buildingId:number;tech:'attack'|'economy'|'armor'}
