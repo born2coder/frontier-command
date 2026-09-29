@@ -48,7 +48,8 @@ test('other villagers can continue an unfinished building without paying twice',
 
 test('all units and buildings use the doubled durability values',()=>{
  const e=engine(),f=e.state.factions[0],worker=e.state.units.find(x=>x.factionId===0)!;
- assert.ok(e.state.units.every(u=>u.maxHp===140));
+ assert.ok(e.state.units.filter(u=>u.kind==='villager').every(u=>u.maxHp===140));
+ assert.ok(e.state.units.filter(u=>u.kind==='scout').every(u=>u.maxHp===180));
  assert.ok(e.state.buildings.every(b=>b.maxHp===2400));
  f.age=3;f.wood=f.food=f.gold=3000;f.popCap=30;
  const barracks={id:9101,factionId:0 as FactionId,kind:'barracks' as const,x:800,y:700,hp:1400,maxHp:1400,progress:1,state:'idle' as const};e.state.buildings.push(barracks);
@@ -92,7 +93,25 @@ test('units trained repeatedly at one building spawn in separate positions',()=>
 });
 
 test('queued training survives restore and reserves population capacity',()=>{
- const e=engine(),f=e.state.factions[0],town=e.state.buildings.find(x=>x.factionId===0&&x.kind==='town')!;f.popCap=e.state.units.filter(u=>u.factionId===0).length+1;assert.equal(e.command(0,{type:'TRAIN',buildingId:town.id,unit:'villager'}).ok,true);assert.equal(e.command(0,{type:'TRAIN',buildingId:town.id,unit:'villager'}).ok,false);const restored=GameEngine.restore(e.snapshot());assert.equal(restored.state.buildings.find(x=>x.id===town.id)?.trainingQueue?.length,1);restored.tick(3999);assert.equal(restored.state.units.filter(u=>u.factionId===0).length,5);restored.tick(1);assert.equal(restored.state.units.filter(u=>u.factionId===0).length,6);
+ const e=engine(),f=e.state.factions[0],town=e.state.buildings.find(x=>x.factionId===0&&x.kind==='town')!,initial=e.state.units.filter(u=>u.factionId===0).length;f.popCap=initial+1;assert.equal(e.command(0,{type:'TRAIN',buildingId:town.id,unit:'villager'}).ok,true);assert.equal(e.command(0,{type:'TRAIN',buildingId:town.id,unit:'villager'}).ok,false);const restored=GameEngine.restore(e.snapshot());assert.equal(restored.state.buildings.find(x=>x.id===town.id)?.trainingQueue?.length,1);restored.tick(3999);assert.equal(restored.state.units.filter(u=>u.factionId===0).length,initial);restored.tick(1);assert.equal(restored.state.units.filter(u=>u.factionId===0).length,initial+1);
+});
+
+test('each faction starts with a fast scout that reveals a larger area',()=>{
+ const e=engine(),scout=e.state.units.find(u=>u.factionId===0&&u.kind==='scout')!,villager=e.state.units.find(u=>u.factionId===0&&u.kind==='villager')!;
+ assert.ok(scout);const sx=scout.x,vx=villager.x;e.command(0,{type:'MOVE',unitIds:[scout.id],target:{x:sx+500,y:scout.y}});e.command(0,{type:'MOVE',unitIds:[villager.id],target:{x:vx+500,y:villager.y}});for(let i=0;i<10;i++)e.tick(100);
+ assert.ok(scout.x-sx>villager.x-vx+35,'scout is not meaningfully faster than a villager');
+ e.state.units=e.state.units.filter(u=>u.factionId!==0||u.id===scout.id);e.state.buildings=e.state.buildings.filter(b=>b.factionId!==0);e.state.fog[0]=[];e.tick(100);
+ assert.ok((e.state.fog[0]?.length??0)>=25,'scout did not reveal its extended sight area');
+});
+
+test('a scout can be trained from a completed barracks',()=>{
+ const e=engine(),f=e.state.factions[0];f.food=500;f.popCap=20;const barracks={id:9400,factionId:0 as FactionId,kind:'barracks' as const,x:800,y:700,hp:1400,maxHp:1400,progress:1,state:'idle' as const};e.state.buildings.push(barracks);const before=e.state.units.filter(u=>u.factionId===0&&u.kind==='scout').length;
+ assert.equal(e.command(0,{type:'TRAIN',buildingId:barracks.id,unit:'scout'}).ok,true);e.tick(4999);assert.equal(e.state.units.filter(u=>u.factionId===0&&u.kind==='scout').length,before);e.tick(1);const scouts=e.state.units.filter(u=>u.factionId===0&&u.kind==='scout');assert.equal(scouts.length,before+1);assert.equal(scouts.at(-1)?.maxHp,180);
+});
+
+test('a scout can attack enemy units while remaining weaker than regular cavalry',()=>{
+ const e=engine(),scout=e.state.units.find(u=>u.factionId===0&&u.kind==='scout')!,enemy=e.state.units.find(u=>u.factionId===1&&u.kind==='villager')!;scout.x=850;scout.y=700;enemy.x=900;enemy.y=700;const before=enemy.hp;
+ assert.equal(e.command(0,{type:'ATTACK',unitIds:[scout.id],targetId:enemy.id}).ok,true);for(let i=0;i<20&&enemy.hp===before;i++)e.tick(100);assert.ok(enemy.hp<before,'scout did not attack a nearby enemy');assert.ok(before-enemy.hp<20,'scout attack is too strong for a reconnaissance unit');
 });
 
 test('server-side fog omits unseen enemy coordinates',()=>{
@@ -144,7 +163,7 @@ test('a depleted resource disappears after its final cargo is delivered',()=>{
  const e=engine(),worker=e.state.units.find(x=>x.factionId===0&&x.kind==='villager')!,resource=e.state.map.resources[0];resource.amount=1;worker.x=resource.x;worker.y=resource.y;assert.equal(e.command(0,{type:'GATHER',unitIds:[worker.id],targetId:resource.id}).ok,true);for(let i=0;i<500&&e.state.map.resources.some(x=>x.id===resource.id);i++)e.tick(100);assert.equal(e.state.map.resources.some(x=>x.id===resource.id),false);
 });
 
-for(const count of [2,3,4])test(`${count} active factions initialize independently`,()=>{const e=engine(count);for(let i=0;i<count;i++){assert.equal(e.state.units.filter(x=>x.factionId===i).length,5);assert.equal(e.state.buildings.filter(x=>x.factionId===i).length,1)}});
+for(const count of [2,3,4])test(`${count} active factions initialize independently`,()=>{const e=engine(count);for(let i=0;i<count;i++){assert.equal(e.state.units.filter(x=>x.factionId===i).length,6);assert.equal(e.state.units.filter(x=>x.factionId===i&&x.kind==='villager').length,5);assert.equal(e.state.units.filter(x=>x.factionId===i&&x.kind==='scout').length,1);assert.equal(e.state.buildings.filter(x=>x.factionId===i).length,1)}});
 
 test('200 units tick without a fatal stall',()=>{
  const e=engine(4),template=e.state.units[0],units:UnitState[]=[];for(let faction=0;faction<4;faction++)for(let i=0;i<50;i++)units.push({...template,id:2000+faction*50+i,factionId:faction as FactionId,kind:'soldier',x:200+faction*550+(i%10)*31,y:500+Math.floor(i/10)*31,hp:120,maxHp:120,state:'idle',nextAttackAt:0});e.state.units=units;
