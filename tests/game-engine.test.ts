@@ -130,6 +130,16 @@ for(const kind of ['wood','food','gold'] as const)test(`${kind} gatherers return
  const e=engine(),f=e.state.factions[0],worker=e.state.units.find(x=>x.factionId===0&&x.kind==='villager')!,resource=e.state.map.resources.find(x=>x.kind===kind)!;worker.x=resource.x;worker.y=resource.y;const before=f[kind];assert.equal(e.command(0,{type:'GATHER',unitIds:[worker.id],targetId:resource.id}).ok,true);for(let i=0;i<400&&f[kind]===before;i++)e.tick(100);assert.ok(f[kind]>before,`${kind} cargo was not deposited`);
 });
 
+test('gatherers deposit at the completed town center nearest to the resource',()=>{
+ const e=engine(),f=e.state.factions[0],worker=e.state.units.find(u=>u.factionId===0&&u.kind==='villager')!,resource=e.state.map.resources.find(r=>r.kind==='wood')!;
+ resource.x=1500;resource.y=800;worker.x=resource.x;worker.y=resource.y;
+ e.state.buildings.push({id:9300,factionId:0,kind:'town',x:1420,y:800,hp:2400,maxHp:2400,progress:1,state:'idle'});
+ const before=f.wood;assert.equal(e.command(0,{type:'GATHER',unitIds:[worker.id],targetId:resource.id}).ok,true);
+ for(let i=0;i<80&&f.wood===before;i++)e.tick(100);
+ assert.ok(f.wood>before,'cargo was not delivered to the nearby town center');
+ assert.ok(worker.x>1200,`worker returned toward the original distant town: ${worker.x}`);
+});
+
 test('a depleted resource disappears after its final cargo is delivered',()=>{
  const e=engine(),worker=e.state.units.find(x=>x.factionId===0&&x.kind==='villager')!,resource=e.state.map.resources[0];resource.amount=1;worker.x=resource.x;worker.y=resource.y;assert.equal(e.command(0,{type:'GATHER',unitIds:[worker.id],targetId:resource.id}).ok,true);for(let i=0;i<500&&e.state.map.resources.some(x=>x.id===resource.id);i++)e.tick(100);assert.equal(e.state.map.resources.some(x=>x.id===resource.id),false);
 });
