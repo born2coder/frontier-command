@@ -175,6 +175,26 @@ test('CPU completes military production and launches an attack',()=>{
  const e=engine(),cpu=new CpuController(1),health=()=>e.state.units.filter(u=>u.factionId===0).reduce((n,u)=>n+u.hp,0)+e.state.buildings.filter(b=>b.factionId===0).reduce((n,b)=>n+b.hp,0),before=health();for(let i=0;i<899;i++){cpu.update(e);e.tick(100)}assert.equal(health(),before,'CPU attacked before the 90 second preparation period');for(let i=899;i<2600&&e.state.phase==='playing';i++){cpu.update(e);e.tick(100)}const military=e.state.units.filter(u=>u.factionId===1&&u.kind!=='villager'),after=health();assert.ok(e.state.buildings.some(b=>b.factionId===1&&b.kind==='barracks'&&b.progress===1),'CPU did not finish a barracks');assert.ok(military.length>=4,'CPU did not train its minimum attack force');assert.ok(after<before,'CPU army never damaged the opponent');
 });
 
+test('CPU gather orders survive long enough to return resources',()=>{
+ const e=engine(),cpu=new CpuController(1),f=e.state.factions[1],worker=e.state.units.find(u=>u.factionId===1&&u.kind==='villager')!,town=e.state.buildings.find(b=>b.factionId===1&&b.kind==='town')!,food=e.state.map.resources.find(r=>r.kind==='food')!;
+ f.food=0;food.x=town.x-170;food.y=town.y;worker.x=food.x;worker.y=food.y;
+ for(let i=0;i<160&&f.food===0;i++){cpu.update(e);e.tick(100)}
+ assert.ok(f.food>0,'CPU repeatedly replaced its gather order before depositing cargo');
+});
+
+test('CPU rebuilds a destroyed army and launches another attack wave',()=>{
+ const e=engine(),cpu=new CpuController(1),cpuFaction=e.state.factions[1];
+ for(let i=0;i<880;i++){cpu.update(e);e.tick(100)}
+ assert.ok(e.state.units.filter(u=>u.factionId===1&&u.kind!=='villager').length>=4,'CPU did not form its first army');
+ e.state.units=e.state.units.filter(u=>u.factionId!==1||u.kind==='villager');
+ for(const b of e.state.buildings.filter(b=>b.factionId===1))b.trainingQueue=[];
+ cpuFaction.food=cpuFaction.gold=2000;cpuFaction.popCap=30;
+ const playerHealth=()=>e.state.units.filter(u=>u.factionId===0).reduce((n,u)=>n+u.hp,0)+e.state.buildings.filter(b=>b.factionId===0).reduce((n,b)=>n+b.hp,0),before=playerHealth();let secondWave=0;
+ for(let i=0;i<1400&&e.state.phase==='playing';i++){cpu.update(e);e.tick(100);secondWave=Math.max(secondWave,e.state.units.filter(u=>u.factionId===1&&u.kind!=='villager').length)}
+ assert.ok(secondWave>=4,`CPU rebuilt only ${secondWave} military units`);
+ assert.ok(playerHealth()<before,'the rebuilt CPU army never launched a second attack');
+});
+
 test('a packed defending army spreads out, moves and damages an intruder',()=>{
  const e=engine(),intruder=e.state.units.find(x=>x.factionId===0)!;intruder.kind='soldier';intruder.hp=intruder.maxHp=400;intruder.x=850;intruder.y=700;const template=e.state.units.find(x=>x.factionId===1)!;const defenders=Array.from({length:8},(_,i)=>({...template,id:9200+i,kind:(i%3===0?'archer':i%3===1?'cavalry':'soldier') as UnitState['kind'],x:1000,y:700,hp:120,maxHp:120,state:'idle' as const,nextAttackAt:0}));e.state.units=[intruder,...defenders];const starts=defenders.map(u=>({x:u.x,y:u.y})),before=intruder.hp;for(let i=0;i<40;i++)e.tick(100);const moved=defenders.filter((u,i)=>Math.hypot(u.x-starts[i].x,u.y-starts[i].y)>20).length;assert.ok(moved>=6,`only ${moved} defenders moved`);assert.ok(intruder.hp<before,'defenders never attacked the intruder');const distinct=new Set(defenders.map(u=>`${Math.round(u.x/10)}:${Math.round(u.y/10)}`));assert.ok(distinct.size>=6,'defenders remained stacked');
 });
